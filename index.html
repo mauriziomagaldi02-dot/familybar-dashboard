@@ -557,8 +557,8 @@ footer{
       e copia l'ID del bin qui sotto in JSONBIN_BIN_ID
    Finché questi due valori restano quelli di default, il cruscotto
    funziona comunque, ma salva solo nel browser di chi lo usa. */
-const JSONBIN_BIN_ID = '6a79a6bef5f4af5e2901d3b3';
-const JSONBIN_API_KEY = '$2a$10$uqWos2c7xu8vAker.l9/Me2ps0YENO6e.9V3WCgpfClCcfE4dq8lO';
+const JSONBIN_BIN_ID = 'INSERISCI_QUI_IL_BIN_ID';
+const JSONBIN_API_KEY = 'INSERISCI_QUI_LA_API_KEY';
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 const REMOTE_CONFIGURED = !JSONBIN_BIN_ID.startsWith('INSERISCI') && !JSONBIN_API_KEY.startsWith('INSERISCI');
 
@@ -607,17 +607,20 @@ async function loadData(){
   }
   try{
     const res = await fetch(JSONBIN_URL + '/latest', { headers: { 'X-Master-Key': JSONBIN_API_KEY } });
-    if(!res.ok) throw new Error('risposta non valida');
+    if(!res.ok){
+      const body = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status} ${res.statusText} — ${body}`);
+    }
     const json = await res.json();
     const record = json.record || {};
     sites = Array.isArray(record.sites) ? record.sites : [...defaultSites];
     categories = (Array.isArray(record.categories) && record.categories.length) ? record.categories : [...defaultCategories];
   }catch(e){
-    console.error(e);
+    console.error('Errore caricamento JSONBin:', e);
     const local = loadLocalFallback();
     sites = local.sites;
     categories = local.categories;
-    showConfigBanner('⚠ Impossibile raggiungere l\'archivio condiviso: mostrati i dati salvati su questo browser.');
+    showConfigBanner('⚠ Impossibile raggiungere l\'archivio condiviso (dettagli nella console del browser, tasto F12): mostrati i dati salvati su questo browser.');
   }
 }
 
@@ -630,9 +633,12 @@ async function saveData(){
       headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
       body: JSON.stringify({ sites, categories })
     });
-    if(!res.ok) throw new Error('salvataggio fallito');
+    if(!res.ok){
+      const body = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status} ${res.statusText} — ${body}`);
+    }
   }catch(e){
-    console.error(e);
+    console.error('Errore salvataggio JSONBin:', e);
     alert('Non sono riuscito a salvare online. La modifica resta solo su questo browser finché la connessione non torna disponibile.');
   }
 }
